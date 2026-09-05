@@ -1,0 +1,26 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_LEFT_RIGHT()
+skinparam nodesep 50
+skinparam ranksep 50
+title Component diagram for Domain
+
+Container_Boundary(dom, "Domain") {
+    Component(kind, "CatalogKind", "catalog-kind.ts", "films, characters, planets, species, starships, transports, vehicles")
+    Component(item, "CatalogItem", "catalog-item.ts", "id, kind, title — строка списка")
+    Component(card, "EntityCard", "entity-card.ts", "title, fields, imageUrl, RelationAction")
+    Component(catPort, "CatalogRepository", "ports/catalog-repository.ts", "list, get, searchCharacters, listRelations")
+    Component(imgPort, "ImageResolver", "ports/image-resolver.ts", "resolve(kind, id) → URL | null")
+    Component(cachePort, "TtlCache", "ports/ttl-cache.ts", "get/set с ttlMs")
+    Component(nf, "NotFoundError", "errors/not-found-error.ts", "нет сущности kind+id")
+    Component(up, "UpstreamError", "errors/upstream-error.ts", "сеть, HTTP ≠404, битый JSON")
+}
+
+Rel(item, kind, "kind")
+Rel(card, kind, "kind")
+Rel(catPort, item, "list / search")
+Rel(catPort, card, "get")
+Rel(imgPort, kind, "resolve")
+
+SHOW_LEGEND()
+@enduml

@@ -1,0 +1,21 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_LEFT_RIGHT()
+skinparam nodesep 80
+skinparam ranksep 70
+title System Context diagram for SW Codex Bot
+
+Person(user, "Пользователь Telegram", "Каталог, поиск персонажей, язык RU/EN")
+System(bot, "SW Codex Bot", "Справочник Звёздных войн: списки, карточки, фото, связи")
+System_Ext(tg, "Telegram Bot API", "Доставка Update и исходящих сообщений")
+System_Ext(swapi, "SWAPI", "Факты вселенной, JSON GET /api")
+System_Ext(vg, "Star Wars Visual Guide", "Постеры и портреты по числовому id")
+
+Rel(user, tg, "Команды и кнопки")
+Rel(tg, bot, "Update", "webhook или long poll")
+Rel(bot, tg, "Ответы чата", "Bot API")
+Rel(bot, swapi, "Каталог", "HTTPS GET")
+Rel(bot, vg, "Есть ли jpg", "HEAD, иначе GET")
+
+SHOW_LEGEND()
+@enduml
