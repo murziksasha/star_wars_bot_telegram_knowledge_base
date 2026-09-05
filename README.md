@@ -41,10 +41,28 @@ npm run smoke:swapi
 
 ## Деплой на Vercel
 
-Zero-config: точка входа `src/index.ts` (см. [Fastify on Vercel](https://vercel.com/docs/frameworks/backend/fastify)).
+Zero-config: точка входа `src/index.ts` (см. [Fastify on Vercel](https://vercel.com/docs/frameworks/backend/fastify)). Git auto-deploy выключен в `vercel.json` (`git.deploymentEnabled: false`): выкладка идёт только из GitHub Actions.
 
-1. Залейте репозиторий и добавьте env в проекте Vercel.
-2. После деплоя:
+### CI/CD (ветка `prod`)
+
+| Событие | Что происходит |
+|---|---|
+| PR **в** `prod` | `npm run typecheck` + `npm test`, затем **preview**-деплой. URL пишется комментарием в PR. Telegram webhook **не** меняется |
+| Push / merge **в** `prod` | те же проверки, **production**-деплой, `GET /health`, затем `npm run webhook:set` |
+
+Ветки `dev` и `prod` уже есть на origin. Workflow-файл должен быть и на `main`, и на `prod` (иначе `push` в `prod` его не увидит).
+
+**GitHub Actions secrets** (Settings → Secrets and variables → Actions):
+
+| Secret | Откуда |
+|---|---|
+| `VERCEL_TOKEN` | [vercel.com/account/tokens](https://vercel.com/account/tokens) |
+| `VERCEL_ORG_ID` | `.vercel/project.json` → `orgId` после `vercel link` (файл в `.gitignore`) |
+| `VERCEL_PROJECT_ID` | `.vercel/project.json` → `projectId` |
+
+**Env в проекте Vercel** (Production и Preview): `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`, `PUBLIC_BASE_URL` (только Production, стабильный `https://<app>.vercel.app` без хвоста `/`, не URL конкретного `dpl_…`), `NODE_ENV=production`. Поллинг на Vercel выключается сам (`VERCEL=1`).
+
+После первого production-деплоя заполните `PUBLIC_BASE_URL` и при необходимости перезапустите job `deploy-production`. Ручной вызов на случай сбоя Action:
 
 ```bash
 # PUBLIC_BASE_URL=https://<your-app>.vercel.app
@@ -57,7 +75,9 @@ npm run webhook:set
 npm run webhook:delete
 ```
 
-Webhook: `POST /telegram/webhook`. Заголовок `X-Telegram-Bot-Api-Secret-Token` должен совпасть с `TELEGRAM_WEBHOOK_SECRET`.
+Webhook: `POST /telegram/webhook`. Заголовок `X-Telegram-Bot-Api-Secret-Token` должен совпасть с `TELEGRAM_WEBHOOK_SECRET`. Preview-деплой этот URL не переписывает.
+
+Локально привязать проект: `npx vercel link`. Каталог `.vercel/` не коммитить.
 
 ## Скрипты
 

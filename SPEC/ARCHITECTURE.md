@@ -13,12 +13,14 @@ C4Context
     System_Ext(swapi, "SWAPI swapi.online", "Факты вселенной")
     System_Ext(vg, "Star Wars Visual Guide", "Постеры и портреты по id")
     System_Ext(vercel, "Vercel", "Хостинг Fastify Function")
+    System_Ext(gha, "GitHub Actions", "CI и деплой при PR/push в prod")
 
     Rel(user, tg, "Команды и кнопки")
     Rel(tg, bot, "Update (webhook или long poll)")
     Rel(bot, tg, "sendMessage / sendPhoto")
     Rel(bot, swapi, "GET /api/...")
     Rel(bot, vg, "HEAD/GET картинки")
+    Rel(gha, vercel, "preview на PR в prod, production на merge")
     Rel(vercel, bot, "Деплой единственного контейнера")
 ```
 
