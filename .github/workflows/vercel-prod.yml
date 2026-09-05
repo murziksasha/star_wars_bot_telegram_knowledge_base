@@ -106,12 +106,19 @@ jobs:
           echo "url=$URL" >> "$GITHUB_OUTPUT"
           echo "Production: $URL"
       - name: Health check
-        run: curl -fsS --retry 5 --retry-delay 3 --retry-all-errors "${{ steps.deploy.outputs.url }}/health"
+        run: curl -fsS -L --retry 5 --retry-delay 3 --retry-all-errors "${{ steps.deploy.outputs.url }}/health"
       - name: Set Telegram webhook
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_WEBHOOK_SECRET: ${{ secrets.TELEGRAM_WEBHOOK_SECRET }}
+          PUBLIC_BASE_URL: ${{ steps.deploy.outputs.url }}
         run: |
-          if [ ! -f .vercel/.env.production.local ]; then
-            echo ".vercel/.env.production.local missing after vercel pull" >&2
-            exit 1
+          if [ -n "$TELEGRAM_BOT_TOKEN" ]; then
+            npm run webhook:set
+          elif [ -f .vercel/.env.production.local ] && ! grep -q '\[SENSITIVE\]' .vercel/.env.production.local; then
+            cp .vercel/.env.production.local .env
+            npm run webhook:set
+          else
+            echo "Notice: TELEGRAM_BOT_TOKEN is marked as Sensitive in Vercel, so vercel pull does not expose its value to CI."
+            echo "To allow GitHub Actions to update Telegram webhook automatically, add TELEGRAM_BOT_TOKEN and TELEGRAM_WEBHOOK_SECRET to GitHub Secrets."
           fi
-          cp .vercel/.env.production.local .env
-          npm run webhook:set

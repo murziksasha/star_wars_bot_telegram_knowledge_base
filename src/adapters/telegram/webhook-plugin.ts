@@ -12,5 +12,15 @@ export const telegramWebhookPlugin: FastifyPluginAsync<WebhookOpts> = async (app
     "fastify",
     opts.secretToken ? { secretToken: opts.secretToken } : {},
   );
-  app.post("/telegram/webhook", handler);
+
+  app.post("/telegram/webhook", async (req, reply) => {
+    try {
+      await handler(req, reply);
+    } catch (err: any) {
+      app.log.error(err, "Telegram webhook error");
+      if (!reply.sent) {
+        return reply.status(200).send({ ok: false, error: err?.message });
+      }
+    }
+  });
 };

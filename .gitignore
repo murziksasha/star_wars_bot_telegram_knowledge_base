@@ -6,6 +6,7 @@ jspm_packages/
 dist/
 build/
 out/
+src/index.js
 *.tsbuildinfo
 
 # Environment and secrets (keep .env.example)
@@ -61,3 +62,5 @@ $RECYCLE.BIN/
 !.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json
+
+.vercel

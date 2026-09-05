@@ -305,5 +305,9 @@ async function sendError(
   if (!(error instanceof NotFoundError) && !(error instanceof UpstreamError)) {
     console.error("Unexpected bot error", error);
   }
-  await ctx.reply(text, { reply_markup: errorKeyboard(retry, locale) });
+  try {
+    await ctx.reply(text, { reply_markup: errorKeyboard(retry, locale) });
+  } catch (e) {
+    console.error("Failed to send error message to Telegram:", e);
+  }
 }
