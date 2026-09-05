@@ -1,0 +1,31 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_LEFT_RIGHT()
+skinparam nodesep 50
+skinparam ranksep 50
+title Component diagram for Infrastructure
+
+Container_Boundary(infraB, "Infrastructure") {
+    Component(entry, "Process entry", "src/index.ts", "createApp, listen, bot.start() если polling")
+    Component(root, "Composition root", "create-app.ts", "Cache, HTTP, repo, images, use cases, bot")
+    Component(cfg, "Config", "config.ts + zod", "Токен, secret, SWAPI URL, polling")
+    Component(http, "Fastify HTTP", "Fastify 5", "GET /health; listen 0.0.0.0")
+    Component(wh, "Webhook plugin", "webhook-plugin.ts", "POST /telegram/webhook + secret")
+    Component(cache, "Memory TTL cache", "memory-ttl-cache.ts", "Map + expiresAt; порт TtlCache")
+}
+
+Component_Ext(bot, "grammY Bot", "Telegram inbound", "Создаётся в root")
+
+Rel(entry, root, "createApp()")
+Rel(entry, http, "app.listen")
+Rel(entry, bot, "bot.start() polling")
+Rel(root, cfg, "loadConfig()")
+Rel(root, cache, "new MemoryTtlCache")
+Rel(root, http, "new Fastify")
+Rel(root, bot, "createBot")
+Rel(root, wh, "register если webhook")
+Rel(wh, http, "POST /telegram/webhook")
+Rel(wh, bot, "webhookCallback")
+
+SHOW_LEGEND()
+@enduml

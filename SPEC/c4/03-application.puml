@@ -1,0 +1,26 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_LEFT_RIGHT()
+skinparam nodesep 50
+skinparam ranksep 50
+title Component diagram for Application
+
+Container_Boundary(appB, "Application") {
+    Component(listUc, "ListCatalog", "list-catalog.ts", "catalog.list(kind)")
+    Component(getUc, "GetEntity", "get-entity.ts", "catalog.get + images.resolve")
+    Component(searchUc, "SearchCharacters", "search-characters.ts", "trim + searchCharacters")
+    Component(relUc, "ListRelations", "list-relations.ts", "catalog.listRelations")
+    Component(caption, "Caption formatter", "formatters/caption.ts", "подпись ≤1024, хвост ≤4096")
+}
+
+Component_Ext(catPort, "CatalogRepository", "domain port", "list, get, search, relations")
+Component_Ext(imgPort, "ImageResolver", "domain port", "resolve(kind, id) → URL | null")
+
+Rel(listUc, catPort, "list")
+Rel(getUc, catPort, "get")
+Rel(getUc, imgPort, "resolve")
+Rel(searchUc, catPort, "searchCharacters")
+Rel(relUc, catPort, "listRelations")
+
+SHOW_LEGEND()
+@enduml

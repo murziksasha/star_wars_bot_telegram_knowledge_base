@@ -1,0 +1,31 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_LEFT_RIGHT()
+skinparam nodesep 50
+skinparam ranksep 50
+title Component diagram for Outbound adapters
+
+Container_Boundary(out, "Outbound adapters") {
+    Component(http, "SwapiHttpClient", "swapi-http-client.ts", "GET, timeout 8s; 404 → NotFound, иначе Upstream")
+    Component(map, "SWAPI mappers", "mappers.ts", "JSON → Item/Card; mergeTransport")
+    Component(repo, "SwapiCatalogRepository", "swapi-catalog-repository.ts", "кэш, join transports, junction-связи")
+    Component(img, "VisualGuideImageResolver", "visual-guide-image-resolver.ts", "URL по id; transports: starships, иначе vehicles")
+}
+
+Component_Ext(cache, "Memory TTL cache", "TtlCache", "list 5 мин, card/image 15 мин")
+Component_Ext(catPort, "CatalogRepository", "domain port", "контракт каталога")
+Component_Ext(imgPort, "ImageResolver", "domain port", "контракт картинок")
+System_Ext(swapi, "SWAPI", "swapi.online")
+System_Ext(vg, "Visual Guide", "starwars-visualguide.com")
+
+Rel(repo, http, "getJson")
+Rel(repo, map, "toItem / toCard")
+Rel(repo, cache, "list 5m, card 15m")
+Rel(repo, catPort, "implements")
+Rel(img, cache, "img:kind:id 15m")
+Rel(img, imgPort, "implements")
+Rel(http, swapi, "GET /api")
+Rel(img, vg, "HEAD затем GET")
+
+SHOW_LEGEND()
+@enduml

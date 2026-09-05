@@ -1,0 +1,27 @@
+@startuml
+!include <C4/C4_Deployment>
+LAYOUT_LEFT_RIGHT()
+skinparam nodesep 60
+skinparam ranksep 60
+title Deployment diagram for SW Codex Bot
+
+Deployment_Node(local, "Developer machine", "Node.js 20") {
+    Container(appDev, "SW Codex app", "tsx watch", "polling + GET /health :3000")
+}
+Deployment_Node(gha, "GitHub Actions", "ubuntu-latest, ветка prod") {
+    Container(ci, "quality + deploy", "npm test, vercel, webhook:set", "preview на PR; production на push")
+}
+Deployment_Node(vercel, "Vercel", "Fastify Serverless Function") {
+    Container(appProd, "SW Codex app", "src/index.ts", "webhook; polling выключен VERCEL=1")
+}
+Deployment_Node(tgNode, "Telegram", "api.telegram.org") {
+    System_Ext(botapi, "Bot API", "Update и исходящие сообщения")
+}
+
+Rel(appDev, botapi, "getUpdates", "long poll")
+Rel(botapi, appProd, "POST /telegram/webhook")
+Rel(ci, vercel, "preview / production")
+Rel(ci, botapi, "setWebhook", "только production")
+
+SHOW_LEGEND()
+@enduml

@@ -1,0 +1,32 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_LEFT_RIGHT()
+skinparam nodesep 50
+skinparam ranksep 50
+title Component diagram for Telegram inbound adapters
+
+Container_Boundary(tgB, "Telegram inbound") {
+    Component(handlers, "Bot handlers", "bot.ts / createBot", "/start /menu, text, callback_query")
+    Component(dispatch, "Callback dispatch", "bot.ts dispatch()", "menu, lang, list, entity, relations")
+    Component(codec, "Callback codec", "callback.ts + zod", "до 64 байт: m, l:, e:, r:, g:locale")
+    Component(kb, "Keyboards", "keyboards.ts", "Reply-меню, список, карточка; PAGE_SIZE=8")
+    Component(views, "Chat views", "showList / showCard / showSearch", "edit или новое сообщение; фото с fallback")
+}
+
+Component_Ext(i18n, "i18n", "adapters/i18n", "locale, t(), localize")
+Component_Ext(uc, "Application", "use-cases", "list / get / search / relations")
+Component_Ext(cap, "Caption formatter", "formatters/caption.ts", "подпись и хвост")
+
+Rel(handlers, dispatch, "callback_query")
+Rel(handlers, codec, "parse")
+Rel(dispatch, codec, "retry unwrap")
+Rel(kb, codec, "encode")
+Rel(views, kb, "клавиатуры")
+Rel(views, uc, "execute")
+Rel(views, cap, "formatEntityCard")
+Rel(handlers, i18n, "localeOf")
+Rel(dispatch, i18n, "set locale")
+Rel(views, i18n, "localize")
+
+SHOW_LEGEND()
+@enduml
