@@ -1,0 +1,63 @@
+# Dependencies
+node_modules/
+jspm_packages/
+
+# Build / compile output
+dist/
+build/
+out/
+*.tsbuildinfo
+
+# Environment and secrets (keep .env.example)
+.env
+.env.*
+!.env.example
+*.pem
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Test / coverage
+coverage/
+.nyc_output/
+*.lcov
+
+# Caches
+.cache/
+.npm/
+.eslintcache
+.prettiercache
+.turbo/
+.parcel-cache/
+.vite/
+.vitest/
+
+# Vercel
+.vercel
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Editors / IDEs
+.idea/
+*.swp
+*.swo
+*~
+*.sublime-workspace
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
