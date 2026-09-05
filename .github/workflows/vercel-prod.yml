@@ -2,7 +2,7 @@ name: Vercel (prod)
 
 on:
   pull_request:
-    branches: [prod]
+    branches: [main]
   push:
     branches: [prod]
 
@@ -45,21 +45,10 @@ jobs:
       - run: npm ci
       - name: Install Vercel CLI
         run: npm install --global vercel@latest
-      - name: Ensure no stale .vercel
-        run: |
-          if [ -d .vercel ]; then
-            echo "Removing existing .vercel directory"
-            rm -rf .vercel
-          fi
-      - name: Verify Vercel secrets
-        run: |
-          if [ -z "${VERCEL_TOKEN:-}" ] || [ -z "${VERCEL_PROJECT_ID:-}" ] || [ -z "${VERCEL_ORG_ID:-}" ]; then
-            echo "Missing Vercel secrets; cannot run vercel pull." >&2
-            echo "Set VERCEL_TOKEN, VERCEL_PROJECT_ID and VERCEL_ORG_ID in repository secrets." >&2
-            exit 1
-          fi
+      - name: Link Vercel project
+        run: bash .github/scripts/link-vercel.sh
       - name: Pull Vercel preview env
-        run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
+        run: vercel pull --yes --environment=preview --token="$VERCEL_TOKEN"
       - name: Build
         run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
       - name: Deploy preview
@@ -100,14 +89,10 @@ jobs:
       - run: npm ci
       - name: Install Vercel CLI
         run: npm install --global vercel@latest
-      - name: Ensure no stale .vercel
-        run: |
-          if [ -d .vercel ]; then
-            echo "Removing existing .vercel directory"
-            rm -rf .vercel
-          fi
+      - name: Link Vercel project
+        run: bash .github/scripts/link-vercel.sh
       - name: Pull Vercel production env
-        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+        run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
       - name: Build
         run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
       - name: Deploy production
