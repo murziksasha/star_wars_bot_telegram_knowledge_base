@@ -1,3 +1,14 @@
+import { Bot, GrammyError, HttpError, type Context } from "grammy";
+import { formatEntityCard } from "../../application/formatters/caption.ts";
+import type { GetEntity } from "../../application/use-cases/get-entity.ts";
+import type { ListCatalog } from "../../application/use-cases/list-catalog.ts";
+import type { ListRelations } from "../../application/use-cases/list-relations.ts";
+import type { SearchCharacters } from "../../application/use-cases/search-characters.ts";
+import type { CatalogKind } from "../../domain/entities/catalog-kind.ts";
+import { NotFoundError } from "../../domain/errors/not-found-error.ts";
+import { UpstreamError } from "../../domain/errors/upstream-error.ts";
+import { localizeEntityCard } from "../i18n/localize.ts";
+import { detectLocale, type Locale } from "../i18n/locale.ts";
 import { Bot, GrammyError, HttpError, type Context } from 'grammy';
 import { formatEntityCard } from '../../application/formatters/caption.ts';
 import type { GetEntity } from '../../application/use-cases/get-entity.ts';
@@ -16,12 +27,16 @@ import {
   isSearchPromptMessage,
   replyKindFromText,
   t,
+} from "../i18n/messages.ts";
+import { expandCharacterSearchQueries } from "../i18n/search-query.ts";
+import { UserLocaleStore } from "../i18n/user-locale-store.ts";
 } from '../i18n/messages.ts';
 import { expandCharacterSearchQueries } from '../i18n/search-query.ts';
 import { UserLocaleStore } from '../i18n/user-locale-store.ts';
 import {
   parseCallbackData,
   type CallbackAction,
+} from "./callback.ts";
 } from './callback.ts';
 import {
   cardKeyboard,
@@ -30,6 +45,7 @@ import {
   listKeyboard,
   mainReplyKeyboard,
   relationsKeyboard,
+} from "./keyboards.ts";
 } from './keyboards.ts';
 
 export type BotUseCases = {
@@ -55,23 +71,30 @@ export function createBot(
     return detectLocale(ctx.from?.language_code);
   }
 
+  bot.command("start", async (ctx) => {
   bot.command('start', async (ctx) => {
     const locale = localeOf(ctx);
+    await ctx.reply(t(locale).greeting, { reply_markup: mainReplyKeyboard(locale) });
     await ctx.reply(t(locale).greeting, {
       reply_markup: mainReplyKeyboard(locale),
     });
   });
 
+  bot.command("menu", async (ctx) => {
   bot.command('menu', async (ctx) => {
     const locale = localeOf(ctx);
+    await ctx.reply(t(locale).menuHint, { reply_markup: mainReplyKeyboard(locale) });
     await ctx.reply(t(locale).menuHint, {
       reply_markup: mainReplyKeyboard(locale),
     });
   });
 
+  bot.on("message:text", async (ctx) => {
   bot.on('message:text', async (ctx) => {
     const locale = localeOf(ctx);
     const text = ctx.message.text.trim();
+    if (text.startsWith("/")) {
+      await ctx.reply(t(locale).unknown, { reply_markup: mainReplyKeyboard(locale) });
     if (text.startsWith('/')) {
       await ctx.reply(t(locale).unknown, {
         reply_markup: mainReplyKeyboard(locale),
@@ -80,6 +103,7 @@ export function createBot(
     }
 
     if (isMenuButton(text)) {
+      await ctx.reply(t(locale).menuHint, { reply_markup: mainReplyKeyboard(locale) });
       await ctx.reply(t(locale).menuHint, {
         reply_markup: mainReplyKeyboard(locale),
       });
@@ -87,6 +111,7 @@ export function createBot(
     }
 
     if (isLanguageButton(text)) {
+      await ctx.reply(t(locale).languagePicker, { reply_markup: languageKeyboard() });
       await ctx.reply(t(locale).languagePicker, {
         reply_markup: languageKeyboard(),
       });
@@ -106,20 +131,24 @@ export function createBot(
       return;
     }
 
+    const replyText = ctx.message.reply_to_message?.text ?? "";
     const replyText = ctx.message.reply_to_message?.text ?? '';
     if (isSearchPromptMessage(replyText)) {
       await showSearch(ctx, useCases, text, locale);
       return;
     }
 
+    await ctx.reply(t(locale).unknown, { reply_markup: mainReplyKeyboard(locale) });
     await ctx.reply(t(locale).unknown, {
       reply_markup: mainReplyKeyboard(locale),
     });
   });
 
+  bot.on("callback_query:data", async (ctx) => {
   bot.on('callback_query:data', async (ctx) => {
     const action = parseCallbackData(ctx.callbackQuery.data);
     await ctx.answerCallbackQuery();
+    if (!action || action.type === "noop") return;
     if (!action || action.type === 'noop') return;
     await dispatch(ctx, useCases, action, localeStore);
   });
@@ -127,10 +156,13 @@ export function createBot(
   bot.catch((err) => {
     const error = err.error;
     if (error instanceof GrammyError) {
+      console.error("Grammy error", error.description);
       console.error('Grammy error', error.description);
     } else if (error instanceof HttpError) {
+      console.error("Telegram HTTP error", error);
       console.error('Telegram HTTP error', error);
     } else {
+      console.error("Bot error", error);
       console.error('Bot error', error);
     }
   });
@@ -144,10 +176,12 @@ async function dispatch(
   action: CallbackAction,
   localeStore: UserLocaleStore,
 ): Promise<void> {
+  if (action.type === "set-locale") {
   if (action.type === 'set-locale') {
     const userId = ctx.from?.id;
     if (userId != null) localeStore.set(userId, action.locale);
     const locale = action.locale;
+    await ctx.reply(t(locale).languageSet, { reply_markup: mainReplyKeyboard(locale) });
     await ctx.reply(t(locale).languageSet, {
       reply_markup: mainReplyKeyboard(locale),
     });
@@ -155,24 +189,32 @@ async function dispatch(
   }
 
   const locale = resolveLocale(ctx, localeStore);
+  const effective = action.type === "retry" ? action.inner : action;
   const effective = action.type === 'retry' ? action.inner : action;
   try {
     switch (effective.type) {
+      case "menu":
+        await ctx.reply(t(locale).menuHint, { reply_markup: mainReplyKeyboard(locale) });
       case 'menu':
         await ctx.reply(t(locale).menuHint, {
           reply_markup: mainReplyKeyboard(locale),
         });
         return;
+      case "lang":
+        await ctx.reply(t(locale).languagePicker, { reply_markup: languageKeyboard() });
       case 'lang':
         await ctx.reply(t(locale).languagePicker, {
           reply_markup: languageKeyboard(),
         });
         return;
+      case "search":
       case 'search':
         await ctx.reply(t(locale).searchPrompt, {
           reply_markup: { force_reply: true, selective: true },
         });
         return;
+      case "list":
+        await showList(ctx, useCases, effective.kind, effective.page, locale, true);
       case 'list':
         await showList(
           ctx,
@@ -183,6 +225,8 @@ async function dispatch(
           true,
         );
         return;
+      case "entity":
+        await showCard(ctx, useCases, effective.kind, effective.id, locale);
       case 'entity':
         await showCard(
           ctx,
@@ -192,6 +236,7 @@ async function dispatch(
           locale,
         );
         return;
+      case "relations":
       case 'relations':
         await showRelations(
           ctx,
@@ -203,6 +248,8 @@ async function dispatch(
           locale,
         );
         return;
+      case "noop":
+      case "set-locale":
       case 'noop':
       case 'set-locale':
         return;
@@ -212,6 +259,7 @@ async function dispatch(
   }
 }
 
+function resolveLocale(ctx: Context, localeStore: UserLocaleStore): Locale {
 function resolveLocale(
   ctx: Context,
   localeStore: UserLocaleStore,
@@ -237,6 +285,7 @@ async function showList(
     const view = listKeyboard(items, kind, page, locale);
     if (edit && ctx.callbackQuery) {
       try {
+        await ctx.editMessageText(view.text, { reply_markup: view.keyboard });
         await ctx.editMessageText(view.text, {
           reply_markup: view.keyboard,
         });
@@ -247,6 +296,7 @@ async function showList(
     }
     await ctx.reply(view.text, { reply_markup: view.keyboard });
   } catch (error) {
+    await sendError(ctx, error, locale, { type: "list", kind, page });
     await sendError(ctx, error, locale, { type: 'list', kind, page });
   }
 }
@@ -260,6 +310,8 @@ async function showRelations(
   page: number,
   locale: Locale,
 ): Promise<void> {
+  const items = await useCases.listRelations.execute(fromKind, fromId, relKind);
+  const view = relationsKeyboard(items, fromKind, fromId, relKind, page, locale);
   const items = await useCases.listRelations.execute(
     fromKind,
     fromId,
@@ -275,6 +327,7 @@ async function showRelations(
   );
   if (ctx.callbackQuery) {
     try {
+      await ctx.editMessageText(view.text, { reply_markup: view.keyboard });
       await ctx.editMessageText(view.text, {
         reply_markup: view.keyboard,
       });
@@ -305,14 +358,17 @@ async function showSearch(
       }
     }
     if (items.length === 0) {
+      await ctx.reply(t(locale).searchEmpty, { reply_markup: mainReplyKeyboard(locale) });
       await ctx.reply(t(locale).searchEmpty, {
         reply_markup: mainReplyKeyboard(locale),
       });
       return;
     }
+    const view = listKeyboard(items, "characters", 0, locale);
     const view = listKeyboard(items, 'characters', 0, locale);
     await ctx.reply(view.text, { reply_markup: view.keyboard });
   } catch (error) {
+    await sendError(ctx, error, locale, { type: "search" });
     await sendError(ctx, error, locale, { type: 'search' });
   }
 }
@@ -324,6 +380,7 @@ async function showCard(
   id: number,
   locale: Locale,
 ): Promise<void> {
+  const card = localizeEntityCard(await useCases.getEntity.execute(kind, id), locale);
   const card = localizeEntityCard(
     await useCases.getEntity.execute(kind, id),
     locale,
@@ -355,6 +412,9 @@ async function sendError(
   locale: Locale,
   retry?: CallbackAction,
 ): Promise<void> {
+  const text = error instanceof NotFoundError ? t(locale).notFound : t(locale).upstream;
+  if (!(error instanceof NotFoundError) && !(error instanceof UpstreamError)) {
+    console.error("Unexpected bot error", error);
   const text =
     error instanceof NotFoundError
       ? t(locale).notFound
@@ -365,6 +425,7 @@ async function sendError(
   ) {
     console.error('Unexpected bot error', error);
   }
+  await ctx.reply(text, { reply_markup: errorKeyboard(retry, locale) });
   try {
     await ctx.reply(text, {
       reply_markup: errorKeyboard(retry, locale),

@@ -14,12 +14,14 @@ if (config.polling) {
   app.log.info('Webhook mode (polling disabled)');
 }
 
+await app.listen({ port: config.port, host: '0.0.0.0' });
 if (!process.env.VERCEL) {
   await app.listen({ port: config.port, host: '0.0.0.0' });
 } else {
   await app.ready();
 }
 
+export default app;
 export default async function handler(
   req: IncomingMessage,
   res: ServerResponse,
