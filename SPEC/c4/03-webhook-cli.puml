@@ -1,0 +1,22 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_LEFT_RIGHT()
+skinparam nodesep 50
+skinparam ranksep 50
+title Component diagram for Webhook CLI
+
+Container_Boundary(cli, "Webhook CLI") {
+    Component(set, "set-webhook", "scripts/set-webhook.ts", "PUBLIC_BASE_URL/telegram/webhook + secret")
+    Component(del, "delete-webhook", "scripts/delete-webhook.ts", "Снимает webhook для локального polling")
+    Component(cfg, "Config", "infrastructure/config.ts", "Токен, secret, PUBLIC_BASE_URL")
+}
+
+System_Ext(tg, "Telegram Bot API", "api.telegram.org")
+
+Rel(set, cfg, "loadConfig")
+Rel(del, cfg, "loadConfig")
+Rel(set, tg, "setWebhook")
+Rel(del, tg, "deleteWebhook")
+
+SHOW_LEGEND()
+@enduml

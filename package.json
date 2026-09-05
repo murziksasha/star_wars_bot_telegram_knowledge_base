@@ -15,7 +15,8 @@
     "test:watch": "vitest",
     "webhook:set": "tsx src/scripts/set-webhook.ts",
     "webhook:delete": "tsx src/scripts/delete-webhook.ts",
-    "smoke:swapi": "tsx src/scripts/smoke-swapi.ts"
+    "smoke:swapi": "tsx src/scripts/smoke-swapi.ts",
+    "c4:render": "node SPEC/c4/render.mjs"
   },
   "dependencies": {
     "dotenv": "^16.6.1",

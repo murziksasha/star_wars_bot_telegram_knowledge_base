@@ -2,7 +2,7 @@
 
 Telegram-бот — справочник вселенной Звёздных войн. Backend: **Fastify 5 + grammY + TypeScript**, чистая архитектура, деплой на **Vercel**. Данные: [swapi.online](https://swapi.online/). Картинки: [Star Wars Visual Guide](https://starwars-visualguide.com). Язык чата — русский или английский (кнопка **Язык / Language**).
 
-Подробности продукта: папка [`SPEC/`](SPEC/README.md).
+Подробности продукта: папка [`SPEC/`](SPEC/README.md). Архитектура — C4-картинки в [`SPEC/c4/`](SPEC/c4/README.md) и текст в [`SPEC/ARCHITECTURE.md`](SPEC/ARCHITECTURE.md).
 
 ## Требования
 
@@ -89,3 +89,4 @@ Webhook: `POST /telegram/webhook`. Заголовок `X-Telegram-Bot-Api-Secret
 | `npm run smoke:swapi` | Живые GET к SWAPI |
 | `npm run webhook:set` | `setWebhook` |
 | `npm run webhook:delete` | `deleteWebhook` |
+| `npm run c4:render` | Пересобрать C4 PNG/SVG из `SPEC/c4/*.puml` |

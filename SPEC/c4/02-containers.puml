@@ -1,0 +1,26 @@
+@startuml
+!include <C4/C4_Container>
+LAYOUT_LEFT_RIGHT()
+skinparam nodesep 70
+skinparam ranksep 70
+title Container diagram for SW Codex Bot
+
+Person(user, "Пользователь Telegram", "Клиент Telegram")
+System_Ext(tg, "Telegram Bot API", "api.telegram.org")
+System_Ext(swapi, "SWAPI", "swapi.online")
+System_Ext(vg, "Visual Guide", "starwars-visualguide.com")
+
+System_Boundary(sys, "SW Codex Bot") {
+    Container(app, "SW Codex app", "Node.js 20, Fastify 5, grammY, TypeScript", "GET /health; webhook или polling; in-memory TTL cache и locale Map")
+    Container(cli, "Webhook CLI", "tsx scripts", "setWebhook / deleteWebhook, не держит апдейты")
+}
+
+Rel(user, tg, "Сообщения и кнопки")
+Rel(tg, app, "Update", "webhook HTTPS или getUpdates")
+Rel(app, tg, "Ответы чата", "Bot API")
+Rel(app, swapi, "Каталог JSON", "GET, timeout 8s")
+Rel(app, vg, "URL картинки", "HEAD/GET, timeout 5s")
+Rel(cli, tg, "Регистрация URL", "setWebhook / deleteWebhook")
+
+SHOW_LEGEND()
+@enduml

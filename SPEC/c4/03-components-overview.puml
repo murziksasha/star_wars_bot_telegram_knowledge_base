@@ -1,0 +1,44 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_TOP_DOWN()
+skinparam nodesep 50
+skinparam ranksep 50
+title Component diagram for SW Codex app (слои)
+
+Container_Boundary(app, "SW Codex app") {
+    Component(infra, "Infrastructure", "Fastify, dotenv/zod, composition root", "Собирает граф, HTTP, TTL cache")
+    Component(tgIn, "Telegram inbound", "grammY, callback codec, keyboards", "Парсит Update, рисует UI")
+    Component(i18n, "i18n", "messages, titles, glossary", "Перевод на отправке; кэш SWAPI всегда EN")
+    Component(usecases, "Application", "Use cases + caption formatter", "Оркестрация портов")
+    Component(domain, "Domain", "Entities, ports, errors", "Без Fastify, Telegram и fetch")
+    Component(swapiOut, "SWAPI adapter", "HTTP client, repository, mappers", "CatalogRepository")
+    Component(imgOut, "Image adapter", "Visual Guide URL + 404", "ImageResolver")
+}
+
+System_Ext(tg, "Telegram Bot API", "api.telegram.org")
+System_Ext(swapi, "SWAPI", "swapi.online")
+System_Ext(vg, "Visual Guide", "starwars-visualguide.com")
+
+Rel(infra, tgIn, "регистрирует webhook / Bot")
+Rel(infra, usecases, "new use cases")
+Rel(infra, swapiOut, "new repository")
+Rel(infra, imgOut, "new resolver")
+Rel(tgIn, i18n, "locale, тексты")
+Rel(tgIn, usecases, "execute")
+Rel(usecases, domain, "порты")
+Rel(swapiOut, domain, "implements")
+Rel(imgOut, domain, "implements")
+Rel(infra, domain, "TtlCache")
+Rel(tgIn, tg, "Bot API")
+Rel(swapiOut, swapi, "GET /api")
+Rel(imgOut, vg, "HEAD/GET jpg")
+
+Lay_D(infra, tgIn)
+Lay_R(tgIn, i18n)
+Lay_D(tgIn, usecases)
+Lay_D(usecases, domain)
+Lay_R(domain, swapiOut)
+Lay_R(swapiOut, imgOut)
+
+SHOW_LEGEND()
+@enduml

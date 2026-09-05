@@ -1,0 +1,25 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_LEFT_RIGHT()
+skinparam nodesep 50
+skinparam ranksep 50
+title Component diagram for i18n adapters
+
+Container_Boundary(i18nB, "i18n") {
+    Component(store, "User locale store", "user-locale-store.ts", "Map userId → ru/en, процессный")
+    Component(detect, "Locale detect", "locale.ts", "store, иначе language_code ru* → ru")
+    Component(msg, "Messages", "messages.ts", "t(locale): кнопки, ошибки, fieldLabels")
+    Component(titles, "Title catalog", "titles.ts", "Имена сущностей по kind+id")
+    Component(gloss, "Glossary", "glossary.ts", "Значения полей, включая opening_crawl")
+    Component(loc, "Localize", "localize.ts", "CatalogItem / EntityCard / relation labels")
+    Component(searchQ, "Search query expand", "search-query.ts", "RU-запрос → EN-имена для people?search=")
+}
+
+Rel(detect, store, "get(userId)")
+Rel(loc, titles, "lookupTitle")
+Rel(loc, gloss, "localizeValue")
+Rel(loc, msg, "field / relation labels")
+Rel(searchQ, titles, "русские имена")
+
+SHOW_LEGEND()
+@enduml
