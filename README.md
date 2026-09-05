@@ -43,14 +43,14 @@ npm run smoke:swapi
 
 Zero-config: точка входа `src/index.ts` (см. [Fastify on Vercel](https://vercel.com/docs/frameworks/backend/fastify)). Git auto-deploy выключен в `vercel.json` (`git.deploymentEnabled: false`): выкладка идёт только из GitHub Actions.
 
-### CI/CD
+### CI/CD (ветка `prod`)
 
 | Событие | Что происходит |
 |---|---|
-| PR **в** `main` | `npm run typecheck` + `npm test`, затем **preview**-деплой. URL пишется комментарием в PR. Telegram webhook **не** меняется |
+| PR **в** `prod` | `npm run typecheck` + `npm test`, затем **preview**-деплой. URL пишется комментарием в PR. Telegram webhook **не** меняется |
 | Push / merge **в** `prod` | те же проверки, **production**-деплой, `GET /health`, затем `npm run webhook:set` |
 
-Workflow-файл должен быть на ветке PR (для preview) и на `prod` (иначе `push` в `prod` его не увидит).
+Ветки `dev` и `prod` уже есть на origin. Workflow-файл должен быть и на `main`, и на `prod` (иначе `push` в `prod` его не увидит).
 
 **GitHub Actions secrets** (Settings → Secrets and variables → Actions):
 

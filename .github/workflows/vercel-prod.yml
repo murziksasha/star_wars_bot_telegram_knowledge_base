@@ -2,7 +2,7 @@ name: Vercel (prod)
 
 on:
   pull_request:
-    branches: [main]
+    branches: [prod]
   push:
     branches: [prod]
 
