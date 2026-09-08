@@ -1,4 +1,5 @@
 import 'fastify';
+import { once } from 'node:events';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { createApp } from './infrastructure/http/create-app.ts';
 
@@ -26,4 +27,6 @@ export default async function handler(
 ) {
   await app.ready();
   app.server.emit('request', req, res);
+  if (res.writableEnded) return;
+  await Promise.race([once(res, 'finish'), once(res, 'close')]);
 }

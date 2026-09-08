@@ -23,6 +23,7 @@ import {
   parseCallbackData,
   type CallbackAction,
 } from './callback.ts';
+import { CallbackGate } from './callback-gate.ts';
 import {
   cardKeyboard,
   errorKeyboard,
@@ -43,8 +44,10 @@ export function createBot(
   token: string,
   useCases: BotUseCases,
   localeStore: UserLocaleStore = new UserLocaleStore(),
+  deferCallbackWork = false,
 ): Bot {
   const bot = new Bot(token);
+  const callbackGate = new CallbackGate();
 
   function localeOf(ctx: Context): Locale {
     const userId = ctx.from?.id;
@@ -118,10 +121,36 @@ export function createBot(
   });
 
   bot.on('callback_query:data', async (ctx) => {
-    const action = parseCallbackData(ctx.callbackQuery.data);
-    await ctx.answerCallbackQuery();
-    if (!action || action.type === 'noop') return;
-    await dispatch(ctx, useCases, action, localeStore);
+    const queryId = ctx.callbackQuery.id;
+    const data = ctx.callbackQuery.data;
+    const chatKey = String(ctx.chat?.id ?? ctx.from?.id ?? queryId);
+    const action = parseCallbackData(data);
+    const decision = callbackGate.claim(queryId, chatKey, data);
+
+    try {
+      await ctx.answerCallbackQuery();
+    } catch {
+      // Already answered, expired, or a webhook retry of the same query.
+    }
+
+    if (decision !== 'process') return;
+    if (!action || action.type === 'noop') {
+      callbackGate.release(chatKey, data);
+      return;
+    }
+
+    const work = dispatch(ctx, useCases, action, localeStore).finally(() => {
+      callbackGate.release(chatKey, data);
+    });
+
+    // Polling is sequential: awaiting SWAPI here delays the next click.
+    if (deferCallbackWork) {
+      void work.catch((error) => {
+        console.error('Callback dispatch error', error);
+      });
+      return;
+    }
+    await work;
   });
 
   bot.catch((err) => {
@@ -241,7 +270,8 @@ async function showList(
           reply_markup: view.keyboard,
         });
         return;
-      } catch {
+      } catch (error) {
+        if (isUnchangedMessageError(error)) return;
         // Photo messages cannot be edited into text lists.
       }
     }
@@ -279,7 +309,8 @@ async function showRelations(
         reply_markup: view.keyboard,
       });
       return;
-    } catch {
+    } catch (error) {
+      if (isUnchangedMessageError(error)) return;
       // Fall through to a new message when the source is a photo card.
     }
   }
@@ -347,6 +378,13 @@ async function showCard(
   for (const extra of formatted.extras) {
     await ctx.reply(extra);
   }
+}
+
+function isUnchangedMessageError(error: unknown): boolean {
+  return (
+    error instanceof GrammyError &&
+    /message is not modified/i.test(error.description)
+  );
 }
 
 async function sendError(
