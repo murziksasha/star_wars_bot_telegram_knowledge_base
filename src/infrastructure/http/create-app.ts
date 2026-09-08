@@ -40,6 +40,7 @@ export async function createApp(): Promise<AppBundle> {
       listRelations,
     },
     new UserLocaleStore(),
+    config.polling,
   );
 
   const app = Fastify({ logger: true });

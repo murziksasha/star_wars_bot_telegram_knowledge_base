@@ -10,8 +10,10 @@ export class GetEntity {
   ) {}
 
   async execute(kind: CatalogKind, id: number): Promise<EntityCard> {
-    const card = await this.catalog.get(kind, id);
-    const imageUrl = await this.images.resolve(kind, id);
+    const [card, imageUrl] = await Promise.all([
+      this.catalog.get(kind, id),
+      this.images.resolve(kind, id),
+    ]);
     return { ...card, imageUrl };
   }
 }
