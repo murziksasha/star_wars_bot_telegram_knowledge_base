@@ -9,11 +9,10 @@ type WebhookOpts = {
 export const telegramWebhookPlugin: FastifyPluginAsync<
   WebhookOpts
 > = async (app, opts) => {
-  const handler = webhookCallback(
-    opts.bot,
-    'fastify',
-    opts.secretToken ? { secretToken: opts.secretToken } : {},
-  );
+  const handler = webhookCallback(opts.bot, 'fastify', {
+    secretToken: opts.secretToken || undefined,
+    timeoutMilliseconds: Infinity,
+  });
 
   app.post('/telegram/webhook', async (req, reply) => {
     try {
